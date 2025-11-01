@@ -1,0 +1,536 @@
+# BE SMART Hackathon - AWS EC2 Deployment Guide
+## Charlotte, NC - November 5-8, 2024
+
+### Overview
+This guide covers deploying an Ubuntu EC2 instance with Nginx and Node.js for React frontend development during the BE SMART hackathon.
+
+---
+
+## Part 1: Deploying Ubuntu Instance in AWS Console
+
+### Step 1: Access AWS Console
+1. Go to https://aws.amazon.com/console/
+2. Sign in with your AWS account credentials
+3. Navigate to the EC2 service (search "EC2" in the services search bar)
+
+### Step 2: Launch EC2 Instance
+1. Click "Launch Instance" button
+2. **Name your instance**: "BE-SMART-Hackathon-Frontend"
+3. **Choose AMI**: Select "Ubuntu Server 22.04 LTS (Free tier eligible)"
+4. **Instance type**: Select "t2.micro" (Free tier eligible)
+5. **Key pair**: 
+   - If you don't have one, click "Create new key pair"
+   - Name it "be-smart-hackathon-key"
+   - Download the .pem file and store it securely
+6. **Network settings**:
+   - Allow SSH (port 22) from "My IP" or "Anywhere" for hackathon
+   - Allow HTTP (port 80) from "Anywhere"
+   - Allow HTTPS (port 443) from "Anywhere"
+   - Allow Custom TCP (port 3000) from "Anywhere" for React dev server
+7. **Storage**: Keep default (8 GB gp3)
+8. Click "Launch instance"
+
+### Step 3: Connect to Your Instance
+1. Wait for instance to reach "Running" state
+2. Click "Connect" button
+3. Choose "EC2 Instance Connect" or "SSH Client"
+4. If using SSH Client, use the command provided (you'll need your .pem key file)
+
+---
+
+## Part 2: Installing Nginx
+
+### What is Nginx?
+Nginx (pronounced "engine-x") is a high-performance web server and reverse proxy server. It's commonly used to:
+- Serve static files (HTML, CSS, JS, images)
+- Act as a reverse proxy to forward requests to backend services
+- Handle load balancing
+- Provide SSL termination
+
+### Why do we need Nginx for React?
+- **Production serving**: Nginx efficiently serves the built React static files
+- **Reverse proxy**: Routes API calls to your backend services
+- **Performance**: Handles multiple concurrent connections efficiently
+- **SSL/HTTPS**: Easy to configure SSL certificates for secure connections
+
+### Installation Steps:
+```bash
+# Update package list
+sudo apt update
+
+# Install Git (needed for cloning repositories)
+sudo apt install git -y
+
+# Install Nginx
+sudo apt install nginx -y
+
+# Start Nginx service
+sudo systemctl start nginx
+
+# Enable Nginx to start on boot
+sudo systemctl enable nginx
+
+# Check Nginx status
+sudo systemctl status nginx
+
+# Test Nginx is working
+curl http://localhost
+```
+
+### Configure Nginx for React (after building):
+```bash
+# Edit Nginx configuration
+sudo nano /etc/nginx/sites-available/default
+
+# Replace the location block with:
+location / {
+    try_files $uri $uri/ /index.html;
+    root /var/www/html;
+    index index.html index.htm;
+}
+
+# Test configuration
+(test the NGINX configuration files for syntax errors without starting or reloading the server)
+sudo nginx -t
+
+# Restart Nginx
+sudo systemctl restart nginx
+```
+
+---
+
+## Part 3: Installing Node.js
+
+### What is Node.js?
+Node.js is a JavaScript runtime built on Chrome's V8 JavaScript engine. It allows you to:
+- Run JavaScript on the server-side
+- Use npm (Node Package Manager) to install packages
+- Build and run React applications
+- Create backend APIs with JavaScript
+
+### Why do we need Node.js for React?
+- **Development server**: React development server runs on Node.js
+- **Build process**: React apps need to be built/compiled before production
+- **Package management**: npm manages React dependencies and build tools
+- **Hot reloading**: Enables live updates during development
+
+### Installation Steps:
+```bash
+# Install Node.js using NodeSource repository (gets latest LTS version)
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+
+# Install Node.js
+sudo apt-get install -y nodejs
+
+# Verify installation
+node --version
+npm --version
+
+# Install additional build tools (needed for some npm packages)
+sudo apt-get install -y build-essential
+```
+
+### Install PM2 (Process Manager - Optional but Recommended):
+```bash
+# Install PM2 globally
+sudo npm install -g pm2
+
+# PM2 helps manage Node.js processes in production
+```
+
+---
+
+## Part 4: Creating React Project on EC2 and Setting Up Git Repository
+
+### Step 1: Create React Project on EC2 Instance
+1. **Connect to your EC2 instance** (SSH or EC2 Instance Connect)
+2. **Navigate to a suitable directory**:
+   ```bash
+   cd /home/ubuntu
+   mkdir projects
+   cd projects
+   ```
+
+3. **Create React application**:
+   ```bash
+   # Create new React app with Vite (faster, recommended)
+   npm create vite@latest be-smart-frontend -- --template react
+   
+   # Navigate to the project directory
+   cd be-smart-frontend
+   
+   # Install dependencies
+   npm install
+   ```
+
+4. **Test the React app locally on EC2**:
+   ```bash
+   # Start development server (accessible on port 3000)
+   npm run dev -- --host 0.0.0.0
+   ```
+
+### Step 2: Set Up Git Repository on EC2
+
+**Option A: Initialize New Repository (Recommended for new projects)**
+1. **Initialize Git repository**:
+   ```bash
+   # Initialize git repository
+   git init
+   
+   # Configure git (replace with your details)
+   git config --global user.name "Your Name"
+   git config --global user.email "your.email@example.com"
+   
+   # Add all files to git
+   git add .
+   
+   # Create initial commit
+   git commit -m "Initial React app setup"
+   ```
+
+2. **Create GitHub repository** (optional but recommended):
+   - Go to GitHub.com and create a new repository named "be-smart-frontend"
+   - Don't initialize with README (since we already have files)
+   - Copy the repository URL
+
+3. **Connect to GitHub repository**:
+   ```bash
+   # Add remote origin (replace with your GitHub URL)
+   git remote add origin https://github.com/yourusername/be-smart-frontend.git
+   
+   # Push to GitHub
+   git branch -M main
+   git push -u origin main
+   ```
+
+**Option B: Push to Existing GitHub Repository (Faster for existing projects)**
+1. **Clone existing repository**:
+   ```bash
+   # Navigate to parent directory
+   cd /home/ubuntu/projects
+   
+   # Clone your existing repository
+   git clone https://github.com/yourusername/your-existing-repo.git be-smart-frontend
+   
+   # Navigate to the cloned directory
+   cd be-smart-frontend
+   ```
+
+2. **Create React app in the cloned directory**:
+   ```bash
+   # Create React app with Vite (this will merge with existing files)
+   npm create vite@latest . -- --template react
+   
+   # Install dependencies
+   npm install
+   
+   # Add all files to git
+   git add .
+   
+   # Commit the React app
+   git commit -m "Add React app with Vite"
+   
+   # Push to GitHub
+   git push origin main
+   ```
+
+3. **Alternative: Push React app to existing repo from current directory**:
+   ```bash
+   # If you're already in the React app directory
+   # Initialize git (if not already done)
+   git init
+   
+   # Configure git
+   git config --global user.name "Your Name"
+   git config --global user.email "your.email@example.com"
+   
+   # Add existing GitHub repository as remote
+   git remote add origin https://github.com/yourusername/your-existing-repo.git
+   
+   # Add all files
+   git add .
+   
+   # Commit
+   git commit -m "Add React app with Vite"
+   
+   # Push to existing repository
+   git branch -M main
+   git push -u origin main
+   ```
+
+### Step 3: Clone Repository to Cursor (Local Development)
+1. **Prepare your local machine**:
+   - **Install Git** (if not already installed):
+     - Windows: Download from https://git-scm.com/download/win
+     - Or use: `winget install Git.Git`
+   - **Install Cursor** (if not already installed):
+     - Download from https://cursor.sh/
+     - Install and set up your account
+
+2. **Clone the repository to Cursor**:
+   ```bash
+   # Open Cursor and open Terminal (Ctrl + `)
+   # Navigate to your project directory
+   cd C:\Users\jadin\ReactProjects\knowledge_of_jcodes
+   
+   # Clone the repository from GitHub
+   git clone https://github.com/yourusername/be-smart-frontend.git
+   
+   # Open the project in Cursor
+   cd be-smart-frontend
+   ```
+
+3. **Install dependencies locally**:
+   ```bash
+   # Install dependencies
+   npm install
+   
+   # Start development server locally
+   npm run dev
+   ```
+
+### Step 4: Development Workflow
+1. **Code in Cursor** on your local machine
+2. **Test locally** with `npm run dev`
+3. **Commit and push changes**:
+   ```bash
+   git add .
+   git commit -m "Your commit message"
+   git push origin main
+   ```
+
+4. **Pull changes on EC2**:
+   ```bash
+   # On EC2 instance
+   git pull origin main
+   ```
+
+5. **Build and deploy on EC2**:
+   ```bash
+   # Build for production
+   npm run build
+   
+   # Copy build files to Nginx directory
+   sudo cp -r dist/* /var/www/html/
+   
+   # Restart Nginx
+   sudo systemctl restart nginx
+   ```
+
+---
+
+## Part 5: Additional Development Commands
+
+### Useful Commands:
+```bash
+# Local development (in Cursor)
+npm run dev                 # Start Vite dev server
+npm run build              # Build for production
+npm run preview            # Preview production build locally
+npm run test               # Run tests (if configured)
+
+# EC2 deployment
+sudo systemctl restart nginx    # Restart web server
+sudo systemctl status nginx     # Check web server status
+sudo cp -r dist/* /var/www/html/  # Deploy build files
+```
+
+---
+
+## Part 6: Security Considerations for Hackathon
+
+### Quick Security Setup:
+```bash
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Configure firewall (if needed)
+sudo ufw allow 22    # SSH
+sudo ufw allow 80    # HTTP
+sudo ufw allow 443   # HTTPS
+sudo ufw allow 3000  # React dev server
+sudo ufw enable
+```
+
+### Environment Variables:
+Create a `.env` file in your React project for API endpoints:
+```env
+REACT_APP_API_URL=http://your-backend-ec2-ip:port
+REACT_APP_ENVIRONMENT=development
+```
+
+---
+
+## Troubleshooting Tips
+
+### Common Issues:
+1. **Port 3000 not accessible**: Check security groups in AWS console
+2. **Nginx not serving files**: Check file permissions and configuration
+3. **Node.js version issues**: Use nvm to manage Node.js versions
+4. **Build fails**: Check for missing dependencies and run `npm install`
+
+### Useful Commands for Debugging:
+```bash
+# Check what's running on ports
+sudo netstat -tlnp
+
+# Check Nginx logs
+sudo tail -f /var/log/nginx/error.log
+
+# Check if services are running
+sudo systemctl status nginx
+sudo systemctl status node
+```
+
+---
+
+## Troubleshooting: Public IPv4 Address Not Loading
+
+====================================================
+
+   # Check if Nginx is running
+   sudo systemctl status nginx
+   
+   # If not running, start it
+   sudo systemctl start nginx
+   
+   # Check if your React app is built and deployed
+   cd /home/ubuntu/projects/be-smart-frontend
+   npm run build
+   sudo cp -r dist/* /var/www/html/
+   
+   # Fix permissions
+   sudo chown -R www-data:www-data /var/www/html/
+   sudo chmod -R 755 /var/www/html/
+   
+   # Restart Nginx
+   sudo systemctl restart nginx
+===================================================
+
+### Step 1: Check Security Groups
+1. **Go to AWS Console** → EC2 → Security Groups
+2. **Find your instance's security group**
+3. **Verify these rules exist**:
+   - Type: SSH, Protocol: TCP, Port: 22, Source: 0.0.0.0/0
+   - Type: HTTP, Protocol: TCP, Port: 80, Source: 0.0.0.0/0
+   - Type: HTTPS, Protocol: TCP, Port: 443, Source: 0.0.0.0/0
+   - Type: Custom TCP, Protocol: TCP, Port: 3000, Source: 0.0.0.0/0
+
+### Step 2: Check if Nginx is Running
+```bash
+# Check Nginx status
+sudo systemctl status nginx
+
+# If not running, start it
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
+# Check if Nginx is listening on port 80
+sudo netstat -tlnp | grep :80
+```
+
+### Step 3: Check if Files are Deployed
+```bash
+# Check if files exist in web directory
+ls -la /var/www/html/
+
+# Check file permissions
+sudo chown -R www-data:www-data /var/www/html/
+sudo chmod -R 755 /var/www/html/
+```
+
+### Step 4: Test Nginx Configuration
+```bash
+# Test Nginx configuration
+sudo nginx -t
+
+# If there are errors, check the config file
+sudo nano /etc/nginx/sites-available/default
+
+# Restart Nginx after fixing config
+sudo systemctl restart nginx
+```
+
+### Step 5: Check Nginx Logs
+```bash
+# Check error logs
+sudo tail -f /var/log/nginx/error.log
+
+# Check access logs
+sudo tail -f /var/log/nginx/access.log
+```
+
+### Step 6: Test Different URLs
+Try these URLs in your browser:
+- `http://your-public-ip` (port 80)
+- `http://your-public-ip:3000` (React dev server)
+- `https://your-public-ip` (port 443)
+
+### Step 7: Quick Fix Commands
+If nothing is working, run these commands in order:
+```bash
+# 1. Update system
+sudo apt update && sudo apt upgrade -y
+
+# 2. Restart Nginx
+sudo systemctl restart nginx
+
+# 3. Check if React app is built and deployed
+cd /home/ubuntu/projects/be-smart-frontend
+npm run build
+sudo cp -r dist/* /var/www/html/
+
+# 4. Fix permissions
+sudo chown -R www-data:www-data /var/www/html/
+sudo chmod -R 755 /var/www/html/
+
+# 5. Restart Nginx again
+sudo systemctl restart nginx
+
+# 6. Check status
+sudo systemctl status nginx
+```
+
+### Step 8: Alternative - Use React Dev Server
+If Nginx isn't working, you can use the React dev server temporarily:
+```bash
+# Navigate to your React project
+cd /home/ubuntu/projects/be-smart-frontend
+
+# Start dev server (accessible on port 3000)
+npm run dev -- --host 0.0.0.0
+
+# Then access: http://your-public-ip:3000
+```
+
+### Common Error Messages and Solutions:
+
+**"This site can't be reached"**:
+- Check security groups (most common issue)
+- Verify Nginx is running
+- Check if port 80 is open
+
+**"403 Forbidden"**:
+- Check file permissions
+- Verify files exist in /var/www/html/
+
+**"502 Bad Gateway"**:
+- Nginx is running but can't serve files
+- Check file permissions and file existence
+
+**"Connection timed out"**:
+- Security group issue
+- Instance might be stopped
+- Check AWS console for instance status
+
+---
+
+## Hackathon Success Tips
+
+1. **Start early**: Set up your environment before the hackathon begins
+2. **Test everything**: Make sure your deployment pipeline works
+3. **Document issues**: Keep notes of any problems and solutions
+4. **Backup your work**: Commit to Git frequently
+5. **Monitor resources**: Keep an eye on AWS costs and instance performance
+
+Good luck at the BE SMART hackathon! 🚀

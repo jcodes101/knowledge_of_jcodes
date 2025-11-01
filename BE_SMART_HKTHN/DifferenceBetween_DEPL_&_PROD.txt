@@ -1,0 +1,97 @@
+Running PM2 in production vs on localhost is mostly about environment and deployment context, not a different PM2 program.
+
+✅ Localhost vs Production — Meaning
+Environment	Typical Use	Domain	Data/DB	PM2 Purpose
+Localhost / Development	Testing, debugging during development	Runs on localhost (often 3000, 5173, etc.)	Uses local DB or mock services	Auto-restart, easier debugging
+Production	Live app serving real users	Public server domain	Uses production database/services	High availability, logging, crash recovery
+
+Same app, but behavior differs based on NODE_ENV, logging, resources, and where it is hosted.
+
+✅ How PM2 knows the environment
+
+PM2 uses NODE_ENV environment variable:
+
+NODE_ENV=development → dev mode
+
+NODE_ENV=production → optimized mode
+
+Example:
+
+pm2 start server.js --name "myapp" --env development
+
+pm2 start server.js --name "myapp" --env production
+
+✅ Check which mode (environment) PM2 is running in
+pm2 env 0
+
+
+(0 = process index)
+or list all:
+
+pm2 list
+pm2 show myapp
+
+
+You’ll see something like:
+
+env = production
+status = online
+
+
+You can also check by inspecting the environment variables:
+
+pm2 describe myapp
+
+
+Look for:
+
+NODE_ENV: production
+
+✅ Typical workflow
+🧪 Development (localhost)
+
+Running on personal machine
+
+Frequent restarts / reloads
+
+Interactive debugging
+
+Example:
+
+pm2 start server.js --watch --env development
+
+
+--watch auto-reloads on file changes
+(never use in production)
+
+🚀 Production (server)
+
+App runs in background forever
+
+Restart on crash or reboot
+
+Logging & monitoring
+
+Example:
+
+pm2 start server.js --name "myapp" --env production
+pm2 startup
+pm2 save
+
+
+This makes PM2 restart automatically on system reboot.
+
+✅ Recap
+Action	Development	Production
+Start app	pm2 start app.js --env development	pm2 start app.js --env production
+View logs	pm2 logs	pm2 logs myapp
+Check env	pm2 env 0	pm2 env 0
+Auto-restart on boot	(usually no)	pm2 startup && pm2 save
+
+If you'd like, tell me:
+
+✅ Your app (Node? Next? Nuxt? Express?)
+✅ Where you're deploying (VPS? AWS? DigitalOcean?)
+✅ Domain + SSL setup status
+
+…and I can give you the exact PM2 commands to run in your scenario.
