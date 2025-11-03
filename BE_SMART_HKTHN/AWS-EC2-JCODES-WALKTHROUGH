@@ -161,3 +161,8 @@ git clone https://github.com/jcodes101/be-smart-frontend.git
 cd be-smart-frontend
 npm install
 npm run dev
+
+IF YOU EVER LEAKED SOMETHING IN A COMMIT:
+git reset --soft HEAD~1
+
+    ^This undoes the last commit but keeps your file changes.
