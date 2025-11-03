@@ -109,3 +109,55 @@ cd be-smart-frontend
 npm install
 
 npm run dev -- --host 0.0.0.0
+
+===============================================================================
+
+6️⃣ Initialize Git & Push to GitHub
+
+git init
+git config --global user.name "Your Name"
+git config --global user.email "you@email.com"
+
+git add .
+git commit -m "Initial app setup"
+git branch -M main
+
+QUICK DETOUR:->
+Go to GitHub
+→ click New repository
+
+    	Name it be-smart-frontend (in this case)
+
+    	DO NOT initialize with README, .gitignore, or license
+
+# Add remote repo (replace with your URL)
+
+git remote add origin https://github.com/USERNAME/be-smart-frontend.git
+git push -u origin main
+
+    ++ IF Sign-In DOES NOT WORK:
+    	Option 1 — Use a Personal Access Token (PAT) with HTTPS
+
+    	Go to GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → 		Generate new token
+
+    	Select scopes: repo (for full repo access)
+
+    	Copy the token (this is your “password” for Git)
+
+    	Push using HTTPS with the token:
+    		git push https://<TOKEN>@github.com/jcodes101/be-smart-frontend.git main
+
+    	ex.
+    		git push https://<<TOKEN>>@github.com/jcodes101/be-smart-frontend.git main
+
+GET YOUR KEY AND REPLACE IT AND PUT IT IN THE ACTUAL CMD
+
+ex. git push https://github_pat<<TOKEN>>@github.com/jcodes101/be-smart-frontend.git main
+
+😭 LAST Step: Clone into Cursor (your laptop)
+
+cd ~/Documents # or wherever you keep projects
+git clone https://github.com/jcodes101/be-smart-frontend.git
+cd be-smart-frontend
+npm install
+npm run dev
