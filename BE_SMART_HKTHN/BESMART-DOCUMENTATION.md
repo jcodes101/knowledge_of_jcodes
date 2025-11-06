@@ -1,6 +1,6 @@
-BE-SMART Hackathon Documentation
+# BE-SMART Hackathon Documentation
 
-DAY 1 (learning + taking in):
+# DAY 1 (learning + taking in):
 
 Cahceing:
 
